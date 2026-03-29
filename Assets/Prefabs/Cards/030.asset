@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d34aab9fc6ac114898bc186207ecc7e, type: 3}
+  m_Name: 030
+  m_EditorClassIdentifier: Assembly-CSharp::Card
+  cardName: "030 \uC544\uD23C \uC2E0"
+  description: "\uC0AC\uC6A9 : \uD50C\uB808\uC774\uC5B4 \uD55C \uBA85\uC744 \uB300\uC0C1\uC73C\uB85C
+    \uC11C\uB85C \uD328 \uD55C \uC7A5\uC744 \uBC84\uB824\uC11C \uD30C\uAD34\uB825\uC774
+    \uB0AE\uC740 \uCABD\uC740 \uB192\uC740 \uCABD\uC758 \uD30C\uAD34\uB825\uB9CC\uD07C
+    \uCCB4\uB825\uC744 \uC783\uB294\uB2E4. (\uC774 \uB54C \uC0C1\uB300\uAC00 \uBA3C\uC800
+    \uCE74\uB4DC\uB97C \uBC84\uB9B0\uB2E4.)"
+  category: 2
+  backType: 0
+  frontSprite: {fileID: -1155770324671594211, guid: a275fb0f03528374591345a07f1d6218, type: 3}
+  backSprite: {fileID: -801624612285049906, guid: ae1addb0cdd0dba4d9b460b63e996682, type: 3}
+  basePower: 10
+  stackEffectType: 0
+  effects: []

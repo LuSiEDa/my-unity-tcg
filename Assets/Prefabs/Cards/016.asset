@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d34aab9fc6ac114898bc186207ecc7e, type: 3}
+  m_Name: 016
+  m_EditorClassIdentifier: Assembly-CSharp::Card
+  cardName: "016 \uD0C0\uC6CC \uC624\uBE0C \uADF8\uB808\uC774"
+  description: "\uC2A4\uD0DD :  (\uACF5\uACA9) \uB2E4\uC74C \uD50C\uB808\uC774\uC5B4\uB294
+    \uCE74\uB4DC\uB97C \uC2A4\uD0DD\uD560 \uC218 \uC5C6\uB2E4."
+  category: 1
+  backType: 0
+  frontSprite: {fileID: 1304660356592243917, guid: 85b957a4612f39c42b830bda4b87d5c9, type: 3}
+  backSprite: {fileID: -801624612285049906, guid: ae1addb0cdd0dba4d9b460b63e996682, type: 3}
+  basePower: 15
+  stackEffectType: 1
+  effects: []

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d34aab9fc6ac114898bc186207ecc7e, type: 3}
+  m_Name: 029
+  m_EditorClassIdentifier: Assembly-CSharp::Card
+  cardName: "029 \uD638\uB8E8\uC2A4 \uC2E0"
+  description: "\uC2A4\uD0DD : (\uD53C\uACA9) \uC2A4\uD0DD \uCE74\uB4DC\uB97C \uBC84\uB9B4
+    \uB54C \uC774 \uCE74\uB4DC\uB97C \uC9C0\uC18D \uCE74\uB4DC\uB85C \uC55E\uC5D0
+    \uB193\uB294\uB2E4.\r\n\r\n\uC2A4\uD0DD\uC5D0 \uC758\uD55C \uC9C0\uC18D : \uD589\uB3D9\uC73C\uB85C
+    \uCE74\uB4DC\uB97C \uBF51\uC744 \uC218 \uC5C6\uB2E4."
+  category: 1
+  backType: 0
+  frontSprite: {fileID: -9074103191873646640, guid: 8e39f20602bf6d44ca0f08409d302deb, type: 3}
+  backSprite: {fileID: -801624612285049906, guid: ae1addb0cdd0dba4d9b460b63e996682, type: 3}
+  basePower: 25
+  stackEffectType: 2
+  effects: []
