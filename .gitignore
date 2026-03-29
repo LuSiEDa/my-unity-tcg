@@ -9,6 +9,8 @@ UserSettings/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
+*.csproj
 *.suo
 *.tmp
 *.user
@@ -20,5 +22,6 @@ UserSettings/
 .DS_Store
 Library/
 Logs/
+.vscode/
 UserSettings/
 Thumbs.db
