@@ -326,4 +326,68 @@ public class GameActionController : MonoBehaviour
     {
         yield return HandleOpenTrick(user, instance);
     }
+    // 기다리는 쪽
+    public IEnumerator CheckTrick(PlayerData player)
+    {
+        var trick = player.trickCard;
+
+        if (trick == null)
+            yield break;
+        if (trick.isFaceUp)
+            yield break;
+        bool canTrigger = false;
+
+        foreach (var effect in trick.origin.effects)
+        {
+            if (effect == null) continue;
+
+            if (CheckTiming(effect.timing))
+            {
+                canTrigger = true;
+                break;
+            }
+        }
+        if (!canTrigger)
+            yield break;
+        
+        Debug.Log($"[트릭 사용 가능] {trick.origin.cardName}");
+
+        float timeout = 3f;
+        EventBus.Publish(new TrickDecisionEvent(player,trick, timeout));
+
+        bool decided = false;
+        bool result = false;
+
+        void Handler(TrickSelectedEvent e)
+        {
+            if (e.player != player) return;
+            decided = true;
+            result = (e.instance != null); // 선택했으면 true
+        }
+
+        EventBus.Subscribe<TrickSelectedEvent>(Handler);
+
+        float timer = 0f;
+        while (!decided && timer < timeout)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        
+        EventBus.Unsubscribe<TrickSelectedEvent>(Handler);
+
+        // 타임아웃 -> 자동 no
+        if (!decided)
+        {
+            Debug.Log("[트릭 자동 패스]");
+            yield break;
+        }
+        // yes 선택 시
+        if (result)
+        {
+            yield return ExecuteTrickDirect(player,trick);
+        }
+        yield break;
+    }
+
 }

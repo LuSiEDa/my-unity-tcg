@@ -9,8 +9,9 @@ public class GameStateManager : MonoBehaviour
         CurrentState = state;
         Debug.Log($"GameState -> {state}");
     }
-    public static bool IsBusy()
+    public static bool IsWaitingInput()
     {
-        return CurrentState != GameState.Idle;
+        return CurrentState == GameState.WaitingForTrick 
+            || CurrentState == GameState.WaitingForCounter;
     }
 }
