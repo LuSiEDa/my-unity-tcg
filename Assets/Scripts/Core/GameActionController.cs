@@ -6,6 +6,7 @@ public class GameActionController : MonoBehaviour
     public static GameActionController Instance;
     private void Awake() => Instance = this;
 
+    // 외부 실행 진입점
     public bool Execute(
         PlayerData user, 
         ActionType action,
@@ -77,6 +78,52 @@ public class GameActionController : MonoBehaviour
             EventBus.Publish(new ActionPointChangedEvent(user, user.actionPoint));
         }
         yield return new WaitForSeconds(0.2f);
+
+        user.trickCheckedThisWindow = false;
+        yield return StartCoroutine(CheckTrick(user));
+    }
+private EffectContext BuildContext(CardInstance instance, ActionType action)
+    {
+        EffectContext context = new EffectContext();
+
+        context.source = instance?.user;
+
+        // 전부 초기화
+        context.isImmediate = false;
+        context.isStackPlayed = false;
+        context.isDamageIncoming = false;
+        context.isLowStack = false;
+        context.isDamageResolved = false;
+        context.isTurnStart = false;
+        context.isTurnEnd = false;
+
+        // 행동 기반
+        switch (action)
+        {
+            case ActionType.UseCard:
+            case ActionType.OpenTrick:
+                context.isImmediate = true;
+                break;
+
+            case ActionType.StackAttack:
+                context.isStackPlayed = true;
+                break;
+        }
+
+        // 상태 기반 (보조 정보)
+        if (StackManager.Instance.IsDamageIncoming())
+            context.isDamageIncoming = true;
+
+        if (StackManager.Instance.HasLowStack())
+            context.isLowStack = true;
+
+        if (TurnManager.Instance.CurrentPhase == TurnPhase.Start)
+            context.isTurnStart = true;
+
+        if (TurnManager.Instance.CurrentPhase == TurnPhase.End)
+            context.isTurnEnd = true;
+
+        return context;
     }
     public static bool CheckTiming(CardTiming timing)
     {
@@ -107,7 +154,7 @@ public class GameActionController : MonoBehaviour
         MoveCard(instance, CardZone.Use);
 
         EventBus.Publish(new CardUsedEvent(user, instance));
-        yield return ExecuteCardEffects(instance);
+        yield return ExecuteCardEffects(instance, ActionType.UseCard);
 
         MoveCard(instance, CardZone.Discard);
     }
@@ -145,7 +192,7 @@ public class GameActionController : MonoBehaviour
         target.SetKeepCard(newCard);
 
         MoveCard(newCard, CardZone.Keep);
-        // --- 지속 설치시 효과가 있다면 처리 ---
+        
         if (newCard.origin?.effects != null)
         {
             foreach (var effect in newCard.origin.effects)
@@ -153,7 +200,7 @@ public class GameActionController : MonoBehaviour
                 effect.OnRegister(target, newCard);
             }
         }
-        // --- 실제로 유용한가는 두고봐야겠지 ---
+
         EventBus.Publish(new PlaceKeepEvent(user, target, newCard));
         return true;
     }
@@ -182,7 +229,7 @@ public class GameActionController : MonoBehaviour
 
         EventBus.Publish(new TrickOpenedEvent(user, instance));
 
-        yield return ExecuteCardEffects(instance);
+        yield return ExecuteCardEffects(instance, ActionType.OpenTrick);
 
         user.SetTrickCard(null);
         MoveCard(instance, CardZone.Discard);
@@ -203,52 +250,79 @@ public class GameActionController : MonoBehaviour
 
     // =========================
 
-    private IEnumerator ExecuteCardEffects(CardInstance instance)
+    private IEnumerator ExecuteCardEffects(CardInstance instance, ActionType action)
     {
         if (instance?.origin?.effects == null) yield break;
 
-        EffectContext context = new EffectContext();
+        EffectContext context = BuildContext(instance, action);
 
         foreach (var effect in instance.origin.effects)
         {
             if (effect == null) continue;
+            // 1. 트리거 컨테이너인 경우 (조건부 효과)
+            if (effect is TriggerContainer tc)
+            {
+                // 지금 상황(context)이 트리거 조건과 맞는지 확인
+                if (!tc.MatchTiming(context)) 
+                    continue; // 안 맞으면 이 컨테이너는 건너뜀
 
-            // 스택 전용 효과는 여기서 실행 금지
-            if (effect.timing == CardTiming.StackOnly)
-                continue;
+                // 맞으면 그 안에 들어있는 진짜 효과들을 실행
+                foreach (var subEffect in tc.effectsToRun)
+                {
+                    if (subEffect == null) continue;
+                    
+                    PlayerData subSelectedTarget = null; // 트리거 내부용 선택 타겟
 
-            // 타이밍 검사
-            if (!CheckTiming(effect.timing))
-                continue;
-            
-            PlayerData selectedTarget = null;
+                    // 트리거 내부 효과가 선택을 요구할 때
+                    if (subEffect.RequiresSelection())
+                    {
+                        bool done = false;
+                        TargetSelectionUI.Instance.StartSelection(player => {
+                            subSelectedTarget = player; 
+                            done = true; 
+                        });
+                        while (!done) yield return null;
+                    }
+
+                    // 수정 포인트: null 대신 subSelectedTarget을 전달해야 함!
+                    var subTargets = TargetResolver.ResolvePlayers(subEffect.targetType, instance.user, subSelectedTarget);
+                    foreach (var t in subTargets)
+                    {
+                        context.target = t;
+                        subEffect.Execute(instance.user, t, instance, context);
+                    }
+                }
+                continue; 
+            }
+
+            // 2. 일반 효과 로직
+            if (effect.timing == CardTiming.StackOnly) continue;
+            if (!CheckTiming(effect.timing)) continue;
+
+            PlayerData selectedTarget = null; // 일반 효과용 선택 타겟
 
             if (effect.RequiresSelection())
             {
                 bool done = false;
-
-                TargetSelectionUI.Instance.StartSelection(player =>
-                {
-                    selectedTarget = player;
-                    done = true;
+                TargetSelectionUI.Instance.StartSelection(player => {
+                    selectedTarget = player; // 아까 오타났던 부분 (commonSelectedTarget -> selectedTarget)
+                    done = true; 
                 });
-                // 플레이이어가 선택할 때까지 대기
-                while (!done)
-                    yield return null;
+                while (!done) yield return null;
             }
             
-            // TargetType 기반 타겟 계산
             var targets = TargetResolver.ResolvePlayers(
                 effect.targetType,
                 instance.user,
-                selectedTarget
+                selectedTarget // 아까 오타났던 부분
             );
-            // 여러 타겟 실행
+
             foreach (var t in targets)
             {
+                context.target = t;
                 effect.Execute(instance.user, t, instance, context);
             }
-            // 효과 사이의 아주 짧은 연출 대기 (필요시)
+
             yield return new WaitForSeconds(0.1f);
         }
     }
@@ -257,11 +331,13 @@ public class GameActionController : MonoBehaviour
         if (instance?.origin?.effects == null)
             yield break;
         
-        EffectContext context = new EffectContext();
+        EffectContext context = BuildContext(instance, ActionType.StackAttack);
 
         foreach (var effect in instance.origin.effects)
         {
             if (effect == null) continue;
+            if (effect is TriggerContainer)
+                continue;
             // StackOnly만 실행
             if (effect.timing != CardTiming.StackOnly)
                 continue;
@@ -329,19 +405,35 @@ public class GameActionController : MonoBehaviour
     // 기다리는 쪽
     public IEnumerator CheckTrick(PlayerData player)
     {
-        var trick = player.trickCard;
+        if (player.trickCheckedThisWindow || player.trickCard == null || player.trickCard.isFaceUp)
+            yield break;
 
-        if (trick == null)
-            yield break;
-        if (trick.isFaceUp)
-            yield break;
+        var trick = player.trickCard;
         bool canTrigger = false;
+        
+        EffectContext context = BuildContext(trick, ActionType.OpenTrick);
+        context.source = player;
+
+        context.isImmediate = false;
+        context.isStackPlayed = false;
+
+        context.isDamageIncoming = StackManager.Instance.IsDamageIncoming();
+        context.isLowStack = StackManager.Instance.HasLowStack();
+        context.isTurnStart = TurnManager.Instance.CurrentPhase == TurnPhase.Start;
+        context.isTurnEnd = TurnManager.Instance.CurrentPhase == TurnPhase.End;
 
         foreach (var effect in trick.origin.effects)
         {
-            if (effect == null) continue;
-
-            if (CheckTiming(effect.timing))
+            if (effect is TriggerContainer tc)
+            {
+                if (tc.MatchTiming(context))
+                {
+                    canTrigger = true;
+                    break;
+                }
+            }
+            // 일반 효과가 트릭에 섞여 있을 경우를 대비해 타이밍 체크 로직 유지 가능
+            else if (effect != null && CheckTiming(effect.timing))
             {
                 canTrigger = true;
                 break;
@@ -349,23 +441,24 @@ public class GameActionController : MonoBehaviour
         }
         if (!canTrigger)
             yield break;
+        // 중복 방지
+        player.trickCheckedThisWindow = true;
         
-        Debug.Log($"[트릭 사용 가능] {trick.origin.cardName}");
+        // 결정 상태 관리 변수
+        bool decided = false;
+        CardInstance selectedInstance = null;
+
+        System.Action<TrickSelectedEvent> handler = null;
+        handler = (e) =>
+        {
+            if (e.player != player) return;
+            selectedInstance = e.instance;
+            decided = true;
+        };
+        EventBus.Subscribe(handler);
 
         float timeout = 3f;
         EventBus.Publish(new TrickDecisionEvent(player,trick, timeout));
-
-        bool decided = false;
-        bool result = false;
-
-        void Handler(TrickSelectedEvent e)
-        {
-            if (e.player != player) return;
-            decided = true;
-            result = (e.instance != null); // 선택했으면 true
-        }
-
-        EventBus.Subscribe<TrickSelectedEvent>(Handler);
 
         float timer = 0f;
         while (!decided && timer < timeout)
@@ -374,20 +467,18 @@ public class GameActionController : MonoBehaviour
             yield return null;
         }
         
-        EventBus.Unsubscribe<TrickSelectedEvent>(Handler);
+        EventBus.Unsubscribe(handler);
 
-        // 타임아웃 -> 자동 no
-        if (!decided)
-        {
-            Debug.Log("[트릭 자동 패스]");
-            yield break;
-        }
-        // yes 선택 시
-        if (result)
+        // UI 강제 종료 이벤트
+        EventBus.Publish(new TrickSelectedEvent(player,null));
+        if (decided && selectedInstance != null)
         {
             yield return ExecuteTrickDirect(player,trick);
         }
-        yield break;
+        else
+        {
+            Debug.Log($"[트릭 패스 또는 타임아웃] {trick.origin.cardName}");
+        }
     }
 
 }

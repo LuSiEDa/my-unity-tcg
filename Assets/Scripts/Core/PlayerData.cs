@@ -8,6 +8,7 @@ public class PlayerData
     public int actionPoint = 0;
     public int index;
     public bool skipStackDraw = false;
+    public bool trickCheckedThisWindow = false;
 
     // 카드 상태
     public List<CardInstance> hand = new();

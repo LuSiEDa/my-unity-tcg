@@ -94,6 +94,10 @@ public class StackManager : MonoBehaviour
         // 전국의 TriggerContainer들에게 데미지 수정을 요청함
         EventBus.Publish(damageEvt);
 
+        yield return GameActionController.Instance.StartCoroutine(
+            GameActionController.Instance.CheckTrick(target)
+        );
+
         yield return null;
 
         int finalDamage = damageEvt.Damage;

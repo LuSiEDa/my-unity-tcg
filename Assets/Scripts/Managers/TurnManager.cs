@@ -95,7 +95,11 @@ public class TurnManager : MonoBehaviour
         EventBus.Publish(new CurrentPlayerChangedEvent(player));
         // 턴 시작 이벤트 발행
         EventBus.Publish(new TurnStartEvent(player));
-        yield return null;
+
+        player.trickCheckedThisWindow = false;
+        yield return GameActionController.Instance.StartCoroutine(
+            GameActionController.Instance.CheckTrick(player)
+        );
 
         currentPhase = TurnPhase.Action;
 

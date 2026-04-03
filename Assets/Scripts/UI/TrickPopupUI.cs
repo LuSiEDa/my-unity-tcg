@@ -37,18 +37,6 @@ public class TrickPopupUI : MonoBehaviour
 
         panel.SetActive(true);
         descriptionText.text = $"{currentTrick.origin.cardName} 발동?";
-
-        StartCoroutine(AutoTimeout(e.timeout));
-    }
-    IEnumerator AutoTimeout(float timeout)
-    {
-        float timer = 0f;
-        while (timer < timeout)
-        {
-            timer += Time.deltaTime;
-            yield return null;
-        }
-        OnClickNo();
     }
     public void OnClickYes()
     {
@@ -63,6 +51,5 @@ public class TrickPopupUI : MonoBehaviour
     void Close()
     {
         panel.SetActive(false);
-        StopAllCoroutines();
     }
 }
